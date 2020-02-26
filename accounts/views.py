@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
+from django.forms import inlineformset_factory
 
 from .forms import OrderForm # импортируем форму, которую мы создали в forms
 
@@ -37,18 +38,22 @@ def customer(request, pk_test):
     return render(request, 'accounts/customer.html', context)
 
 
-def createOrder(request):
+def createOrder(request, pk):
     """Функция для создания заказа
     order_form.html переход по стр происходит не через href, а через method POST"""
-    form = OrderForm()  # создаем экзмепляр нашего класса OrderForm()
+    OrderFormSet = inlineformset_factory(Customer, Order, fields=('product', 'status'), extra=10)
+    customer = Customer.objects.get(id=pk)
+    formset = OrderFormSet(queryset=Order.objects.none(), instance=customer)
+    #form = OrderForm(initial={'customer': customer})  # создаем экзмепляр нашего класса OrderForm()
 
     if request.method =='POST':  # если метод POST
-        form = OrderForm(request.POST)  # передаем форме  post данные
-        if form.is_valid(): # если данные действительны или валидны
-            form.save() # сохраним форму ( вроде в базе данных)
+        #form = OrderForm(request.POST)  # передаем форме  post данные
+        formset = OrderFormSet(request.POST, instance=customer)
+        if formset.is_valid(): # если данные действительны или валидны
+            formset.save() # сохраним форму ( вроде в базе данных)
             return redirect('/') # и перенаправим на домашнюю стр
 
-    context = {'form': form}  # далее мы по ключу передадим form  в order_form.html
+    context = {'form': formset}  # далее мы по ключу передадим form  в order_form.html
     return render(request, 'accounts/order_form.html', context)  # возвращаем order_form.html
 
 

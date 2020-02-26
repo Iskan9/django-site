@@ -8,8 +8,12 @@
         <div class="card card-body">
 
             <form action="" method="POST">
-                {% csrf_token %} <!-- для безопасной отправки данных -->
-                {{form}}
+                {% csrf_token %}
+                {{ form.management_form }}
+                {% for field in form %}
+                {{field}}
+                <hr>
+                {% endfor %}
                 <input type="submit" name="Submit">
             </form>
 
