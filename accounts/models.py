@@ -73,7 +73,7 @@ class Order(models.Model):
     status = models.CharField(max_length=200, null=True, choices=STATUS, verbose_name="статус")
 
     def __str__(self):
-        return str(self.customer) + ":" + str(self.status)
+        return self.product.name
 
 
     class Meta:  # контейнер класса с некоторыми опциями: метаданные
