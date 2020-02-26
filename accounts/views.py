@@ -27,5 +27,10 @@ def products(request):
     # название ключа в словаре, может быть любым, мы по нему потом обращаемся в html доке
 
 
-def customer(request):
-    return render(request, 'accounts/customer.html')
+def customer(request, pk_test):
+    customer = Customer.objects.get(id=pk_test)  # запросить из баз клиента по id
+    orders = customer.order_set.all()  # Возвращает все заказы, связанные с клиентом
+    order_count = orders.count()
+
+    context = {'customer': customer, 'orders': orders, 'order_count': order_count} # чтобы можно было обращаться через html
+    return render(request, 'accounts/customer.html', context)
