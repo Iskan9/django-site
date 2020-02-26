@@ -71,6 +71,7 @@ class Order(models.Model):
 
     date_created = models.DateTimeField(auto_now_add=True, null=True, verbose_name="дата создания")
     status = models.CharField(max_length=200, null=True, choices=STATUS, verbose_name="статус")
+    note = models.CharField(max_length=200, null=True, verbose_name="запись")
 
     def __str__(self):
         return self.product.name
