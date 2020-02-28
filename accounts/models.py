@@ -1,13 +1,15 @@
 
-from django.db import models
 
 from django.db import models
 
-# Create your models here.
+from django.contrib.auth.models import User  # импорируем User для установления соотношения 1 к 1 для пользователя
+#  и клиента
 
 
 class Customer(models.Model):
     """Клиенты"""
+    user = models.OneToOneField(User, null=True, on_delete=models.CASCADE, verbose_name="пользователь")
+    # пользователь соответсвует клиенту
     name = models.CharField(max_length=200, null=True, verbose_name="имя")
     phone = models.CharField(max_length=200, null=True, verbose_name="телефон")
     email = models.CharField(max_length=200, null=True)

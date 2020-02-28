@@ -36,6 +36,13 @@ def registerPage(request):
             group = Group.objects.get(name='Сторонний_пользователь') # создаем объект Group
             user.groups.add(group)  # и добавили нового пользователя в эту группу
 
+            Customer.objects.create( # добавляем нового пользователя в таблицу Customer
+                #  и при вхождении в систему, пользователь увидит статистику, подобно другим пользователям,
+                # только у него будет нулевая статистика
+                user=user,
+                name=user.username,
+            )
+
             messages.success(request, 'Аккаунт ' + username + " успешно создан")
             return redirect('login')  # после успешной регистрации перенаправялем на login.html
     context = {'form': form}
@@ -67,9 +74,18 @@ def logoutUser(request):
     return redirect('login')  # возвращаем на страницу login
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['Сторонний_пользователь']) # для стороннего пользователя
 def userPage(request):
     """Функция для пользователя"""
-    context = {}
+    orders = request.user.customer.order_set.all()
+    total_orders = orders.count() # всего заказов
+    delivered = orders.filter(status='Доставлено').count() # заказы со статусом доставлено
+    pending = orders.filter(status='В ожидании').count() # заказы со статусом в ожидании
+
+    context = {'orders': orders, 'total_orders': total_orders,
+               'delivered': delivered, 'pending': pending}
+
     return render(request, 'accounts/user.html', context)
 
 
