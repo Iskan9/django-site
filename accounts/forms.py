@@ -1,5 +1,5 @@
 from django.forms import ModelForm
-from .models import Order  # импортируем модель Order
+from .models import * # импортируем все модели
 
 from django.contrib.auth.forms import UserCreationForm # импортируем форму регистрации
 from django.contrib.auth.models import User # еще ипортируем
@@ -16,3 +16,10 @@ class CreateUserForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['username', 'email', 'password1', 'password2']
+
+
+class CustomerForm(ModelForm):  # добавил форму для "настройки аккаунта"
+    class Meta:
+        model = Customer
+        fields = '__all__'
+        exclude = ['user'] # исключить поле пользователь

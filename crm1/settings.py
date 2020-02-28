@@ -129,3 +129,7 @@ MEDIA_URL = '/images/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static')
 ]
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'static/images')
+#  чтобы по умолчанию у пользователя была картинка из image
+#  а так же чтобы выбранные пользователем свое фото профиля попадало сюда /static/images

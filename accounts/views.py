@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.forms import inlineformset_factory
 from django.contrib.auth.forms import UserCreationForm # для создания формы регистрации
 
-from .forms import OrderForm, CreateUserForm # импортируем форму, которую мы создали в forms
+from .forms import OrderForm, CreateUserForm, CustomerForm # импортируем форму, которую мы создали в forms
 from .filter import OrderFilter # для фильтрации в поиске
 
 from .models import * # импортируем наши модели
@@ -179,4 +179,22 @@ def deleteOrder(request, pk):
         return redirect('/') # вернуть на домашнюю стр
     context = {'item': order}
     return render(request, 'accounts/delete.html', context)
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['Сторонний_пользователь'])
+def accountSettings(request):
+    """Настройки аккаунта"""
+    customer = request.user.customer # данные пользователя, который вошел в систему
+    form = CustomerForm(instance=customer) # создаем объект CustomerForm
+    # для "настройки аккаунта" профиля
+
+    if request.method == 'POST':
+        form = CustomerForm(request.POST, request.FILES,instance=customer)
+        if form.is_valid():
+            form.save()
+
+
+    context = {'form':form}
+    return render(request, 'accounts/account_settings.html', context)
 

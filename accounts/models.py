@@ -13,6 +13,8 @@ class Customer(models.Model):
     name = models.CharField(max_length=200, null=True, verbose_name="имя")
     phone = models.CharField(max_length=200, null=True, verbose_name="телефон")
     email = models.CharField(max_length=200, null=True)
+    profile_pic = models.ImageField(default="profile1.png", null=True, blank=True, verbose_name="фото профиля")
+    # для ImageField нужен pillow, установим его через pip
     date_created = models.DateTimeField(auto_now_add=True, null=True, verbose_name="дата создания")
 
     def __str__(self):
