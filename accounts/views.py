@@ -17,47 +17,48 @@ from django.contrib.auth.decorators import login_required # импортируе
 # то есть без регистрации и вхождения в систему, посмотреть данные не удасться, поэтому
 # мы перед каждой функцией, которая отображает нужный нам контент, ставим декоратор
 
+from .decorators import *  # импортируем все наши декораторы
 
+from django.contrib.auth.models import Group # импортируем Group
+# Далее с помощью Group все новые польз., автоматически ассоциируются с существующей группой "Сторонний_пользователь"
+
+
+@unauthenticated_user # применяем декоратор, при попытке вошедшего в систему пользователя, перейти к register/
 def registerPage(request):
     """Регистрация пользователя"""
+    form = CreateUserForm()
+    if request.method == 'POST':
+        form = CreateUserForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            username = form.cleaned_data.get('username')
 
-    if request.user.is_authenticated: # если пользователь уже аутентифицирован
-        # то есть он вошел в систему, но зачем-то попытался получить доступ к ../login/, то
-        return redirect('home')
-    else:
-        form = CreateUserForm()
-        if request.method == 'POST':
-            form = CreateUserForm(request.POST)
-            if form.is_valid():
-                form.save()
-                user = form.cleaned_data.get('username')
-                messages.success(request, 'Аккаунт ' + user + " успешно создан")
-                return redirect('login')  # после успешной регистрации перенаправялем на login.html
-        context = {'form': form}
-        return render(request, 'accounts/register.html', context)
+            group = Group.objects.get(name='Сторонний_пользователь') # создаем объект Group
+            user.groups.add(group)  # и добавили нового пользователя в эту группу
 
+            messages.success(request, 'Аккаунт ' + username + " успешно создан")
+            return redirect('login')  # после успешной регистрации перенаправялем на login.html
+    context = {'form': form}
+    return render(request, 'accounts/register.html', context)
 
 
+@unauthenticated_user
 def loginPage(request):
     """Логин"""
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
 
-    if request.user.is_authenticated:  # выше пояснил
-        return redirect('home')
-    else:
-        if request.method == 'POST':
-            username = request.POST.get('username')
-            password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
 
-            user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)  # входим в систему
+            return redirect('home')  # и перенаправляемся на домашнюю стр
+        else:
+            messages.info(request, 'Логин или пароль неверны')
 
-            if user is not None:
-                login(request, user)  # входим в систему
-                return redirect('home')  # и перенаправляемся на домашнюю стр
-            else:
-                messages.info(request, 'Логин или пароль неверны')
-
-        context = {}
-        return render(request, 'accounts/login.html', context)
+    context = {}
+    return render(request, 'accounts/login.html', context)
 
 
 def logoutUser(request):
@@ -65,7 +66,15 @@ def logoutUser(request):
     logout(request) # функция импортированная
     return redirect('login')  # возвращаем на страницу login
 
-@login_required(login_url='login')
+
+def userPage(request):
+    """Функция для пользователя"""
+    context = {}
+    return render(request, 'accounts/user.html', context)
+
+
+@login_required(login_url='login')  # просмотр разрешен, если пользователь зашел в систему
+@admin_only # если группа Админ, отобразить декорируемую функцию, иначе отобразить user.html
 def home(request):
     orders = Order.objects.all() # запросить из базы все заказы
     customers = Customer.objects.all()  # запросить из базы всех клиентов
@@ -83,12 +92,14 @@ def home(request):
 
 
 @login_required(login_url='login')
+@allowed_users(allowed_roles=['Админ']) # фнкционал только для админа
 def products(request):
     products = Product.objects.all() # запросить из базы все продукты
     return render(request, 'accounts/products.html', {'products': products})
     # название ключа в словаре, может быть любым, мы по нему потом обращаемся в html доке
 
 @login_required(login_url='login')
+@allowed_users(allowed_roles=['Админ'])
 def customer(request, pk_test):
     customer = Customer.objects.get(id=pk_test)  # запросить из базы клиента по id
     orders = customer.order_set.all()  # Возвращает все заказы, связанные с клиентом
@@ -103,6 +114,7 @@ def customer(request, pk_test):
 
 
 @login_required(login_url='login')
+@allowed_users(allowed_roles=['Админ'])
 def createOrder(request, pk):
     """Функция для создания заказа
     order_form.html переход по стр происходит не через href, а через method POST"""
@@ -123,6 +135,7 @@ def createOrder(request, pk):
 
 
 @login_required(login_url='login')
+@allowed_users(allowed_roles=['Админ'])
 def updateOrder(request, pk):
     """Обновить заказ"""
     order = Order.objects.get(id=pk) # запросить из базы клиента по id
@@ -141,6 +154,7 @@ def updateOrder(request, pk):
 
 
 @login_required(login_url='login')
+@allowed_users(allowed_roles=['Админ'])
 def deleteOrder(request, pk):
     """Удалить заказ"""
     order = Order.objects.get(id=pk)
