@@ -1,13 +1,71 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.forms import inlineformset_factory
+from django.contrib.auth.forms import UserCreationForm # для создания формы регистрации
 
-from .forms import OrderForm # импортируем форму, которую мы создали в forms
-from .filter import OrderFilter
+from .forms import OrderForm, CreateUserForm # импортируем форму, которую мы создали в forms
+from .filter import OrderFilter # для фильтрации в поиске
 
 from .models import * # импортируем наши модели
 
+from django.contrib import messages # импортируем сообщение, которое должно появится после регистрации
+from django.contrib.auth import authenticate, login, logout  # импортируем
+# аутентификацию, вход в систему и выход из системы
 
+from django.contrib.auth.decorators import login_required # импортируем декоратор
+# который ограничивает доступ( далее не зарегистрированных пользователей)
+# то есть без регистрации и вхождения в систему, посмотреть данные не удасться, поэтому
+# мы перед каждой функцией, которая отображает нужный нам контент, ставим декоратор
+
+
+def registerPage(request):
+    """Регистрация пользователя"""
+
+    if request.user.is_authenticated: # если пользователь уже аутентифицирован
+        # то есть он вошел в систему, но зачем-то попытался получить доступ к ../login/, то
+        return redirect('home')
+    else:
+        form = CreateUserForm()
+        if request.method == 'POST':
+            form = CreateUserForm(request.POST)
+            if form.is_valid():
+                form.save()
+                user = form.cleaned_data.get('username')
+                messages.success(request, 'Аккаунт ' + user + " успешно создан")
+                return redirect('login')  # после успешной регистрации перенаправялем на login.html
+        context = {'form': form}
+        return render(request, 'accounts/register.html', context)
+
+
+
+def loginPage(request):
+    """Логин"""
+
+    if request.user.is_authenticated:  # выше пояснил
+        return redirect('home')
+    else:
+        if request.method == 'POST':
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+
+            user = authenticate(request, username=username, password=password)
+
+            if user is not None:
+                login(request, user)  # входим в систему
+                return redirect('home')  # и перенаправляемся на домашнюю стр
+            else:
+                messages.info(request, 'Логин или пароль неверны')
+
+        context = {}
+        return render(request, 'accounts/login.html', context)
+
+
+def logoutUser(request):
+    """Выйти из системы"""
+    logout(request) # функция импортированная
+    return redirect('login')  # возвращаем на страницу login
+
+@login_required(login_url='login')
 def home(request):
     orders = Order.objects.all() # запросить из базы все заказы
     customers = Customer.objects.all()  # запросить из базы всех клиентов
@@ -24,12 +82,13 @@ def home(request):
     return render(request, 'accounts/dashboard.html', context)
 
 
+@login_required(login_url='login')
 def products(request):
     products = Product.objects.all() # запросить из базы все продукты
     return render(request, 'accounts/products.html', {'products': products})
     # название ключа в словаре, может быть любым, мы по нему потом обращаемся в html доке
 
-
+@login_required(login_url='login')
 def customer(request, pk_test):
     customer = Customer.objects.get(id=pk_test)  # запросить из базы клиента по id
     orders = customer.order_set.all()  # Возвращает все заказы, связанные с клиентом
@@ -43,16 +102,17 @@ def customer(request, pk_test):
     return render(request, 'accounts/customer.html', context)
 
 
+@login_required(login_url='login')
 def createOrder(request, pk):
     """Функция для создания заказа
     order_form.html переход по стр происходит не через href, а через method POST"""
     OrderFormSet = inlineformset_factory(Customer, Order, fields=('product', 'status'), extra=10)
     customer = Customer.objects.get(id=pk)
     formset = OrderFormSet(queryset=Order.objects.none(), instance=customer)
-    #form = OrderForm(initial={'customer': customer})  # создаем экзмепляр нашего класса OrderForm()
+    # form = OrderForm(initial={'customer': customer})  # создаем экзмепляр нашего класса OrderForm()
 
     if request.method =='POST':  # если метод POST
-        #form = OrderForm(request.POST)  # передаем форме  post данные
+        # form = OrderForm(request.POST)  # передаем форме  post данные
         formset = OrderFormSet(request.POST, instance=customer)
         if formset.is_valid(): # если данные действительны или валидны
             formset.save() # сохраним форму ( вроде в базе данных)
@@ -62,6 +122,7 @@ def createOrder(request, pk):
     return render(request, 'accounts/order_form.html', context)  # возвращаем order_form.html
 
 
+@login_required(login_url='login')
 def updateOrder(request, pk):
     """Обновить заказ"""
     order = Order.objects.get(id=pk) # запросить из базы клиента по id
@@ -79,6 +140,7 @@ def updateOrder(request, pk):
     return render(request, 'accounts/order_form.html', context)  # возвращаем order_form.html
 
 
+@login_required(login_url='login')
 def deleteOrder(request, pk):
     """Удалить заказ"""
     order = Order.objects.get(id=pk)
