@@ -1,2 +1,3 @@
 # django-site
-Сайт
+login: admin
+password: 123admin123
