@@ -1,3 +1,3 @@
 # django-site
-* login: admin
-* password: Iskanadmin
+* login: Iskan
+* password: Iskandar1997
